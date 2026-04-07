@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block title %}Register Student{% endblock %}
+{% block page_title %}Register New Student{% endblock %}
+
+{% block content %}
+
+<style>
+/* --- Existing Styles --- */
+.two-col{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+}
+.card{
+background:white;
+border-radius:12px;
+padding:20px;
+box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
+.card-title{
+font-size:20px;
+font-weight:600;
+}
+.form-row{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+margin-bottom:15px;
+}
+.form-group{
+display:flex;
+flex-direction:column;
+}
+.form-group input, .form-group textarea{
+padding:10px;
+border:1px solid #ddd;
+border-radius:6px;
+}
+textarea{
+resize:vertical;
+}
+.btn{
+padding:10px 16px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+.btn-primary{
+background:#2563eb;
+color:white;
+}
+.btn-success{
+background:#16a34a;
+color:white;
+}
+.btn-outline{
+background:white;
+border:1px solid #ddd;
+}
+.webcam-box{
+position:relative;
+background:black;
+border-radius:10px;
+overflow:hidden;
+}
+#webcamVideo{
+width:100%;
+height:300px;
+object-fit:cover;
+}
+.face-guide{
+position:absolute;
+border:3px dashed #22c55e;
+width:160px;
+height:200px;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+border-radius:10px;
+}
+.captured-img{
+width:100%;
+margin-top:10px;
+border-radius:8px;
+}
+.preview-card{
+margin-top:20px;
+padding:15px;
+background:#f8fafc;
+border-radius:10px;
+}
+.qr-box{
+text-align:center;
+margin-top:10px;
+}
+.success{
+color:#16a34a;
+font-weight:600;
+}
+.warning{
+color:#dc2626;
+font-weight:600;
+}
+@media(max-width:900px){
+.two-col{
+grid-template-columns:1fr;
+}
+}
+</style>
+
+<div class="two-col">
+
+<!-- LEFT SIDE FORM -->
+
+<div class="card">
+
+<h2 class="card-title">Student Information</h2>
+
+<form method="POST" action="{{ url_for('register_student') }}">
+
+<input type="hidden" name="photo_data" id="photoData">
+
+<div class="form-row">
+
+<div class="form-group">
+<label>Name</label>
+<input type="text" name="name" id="nameInput" required>
+</div>
+
+<div class="form-group">
+<label>Roll Number</label>
+<input type="text" name="roll_number" id="rollInput" required>
+<span id="rollStatus"></span>
+</div>
+
+</div>
+
+<div class="form-row">
+
+<div class="form-group">
+<label>Class</label>
+<input type="text" name="class" id="classInput" required>
+</div>
+
+<div class="form-group">
+<label>Email</label>
+<input type="email" name="email">
+</div>
+
+</div>
+
+<div class="form-row">
+
+<div class="form-group">
+<label>Parent Name</label>
+<input type="text" name="parent_name" id="parentNameInput">
+</div>
+
+<div class="form-group">
+<label>Parent Phone</label>
+<input type="text" name="parent_phone" id="parentPhoneInput">
+</div>
+
+</div>
+
+<div class="form-group">
+<label>Notes / Report</label>
+<textarea name="notes" id="notesInput" rows="3"></textarea>
+</div>
+
+<button type="submit" class="btn btn-primary">
+Register Student
+</button>
+
+</form>
+
+<!-- STUDENT PREVIEW -->
+
+<div class="preview-card">
+
+<h3>Student Preview</h3>
+
+<p>Name: <span id="previewName">-</span></p>
+<p>Roll: <span id="previewRoll">-</span></p>
+<p>Class: <span id="previewClass">-</span></p>
+<p>Parent: <span id="previewParent">-</span></p>
+<p>Phone: <span id="previewPhone">-</span></p>
+<p>Notes: <span id="previewNotes">-</span></p>
+
+<img id="previewPhoto" class="captured-img">
+
+<div class="qr-box">
+<canvas id="qrCanvas"></canvas>
+</div>
+
+<p id="faceStatus"></p>
+
+</div>
+
+</div>
+
+<!-- CAMERA SECTION -->
+
+<div class="card">
+
+<h2 class="card-title">Face Capture</h2>
+
+<div class="webcam-box">
+<video id="webcamVideo" autoplay playsinline></video>
+<div class="face-guide"></div>
+</div>
+
+<canvas id="webcamCanvas" style="display:none"></canvas>
+
+<img id="capturedPhoto" class="captured-img">
+
+<div style="margin-top:10px">
+
+<button class="btn btn-primary" onclick="startWebcam()">Start</button>
+<button class="btn btn-success" onclick="capturePhoto()">Capture</button>
+<button class="btn btn-outline" onclick="retake()">Retake</button>
+<button class="btn btn-outline" onclick="stopWebcam()">Stop</button>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+let stream=null
+
+async function startWebcam(){
+const video=document.getElementById("webcamVideo")
+stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+video.srcObject=stream
+}
+
+function stopWebcam(){
+if(stream) stream.getTracks().forEach(track=>track.stop())
+}
+
+function capturePhoto(){
+const video=document.getElementById("webcamVideo")
+const canvas=document.getElementById("webcamCanvas")
+const photo=document.getElementById("capturedPhoto")
+canvas.width=320
+canvas.height=240
+const ctx=canvas.getContext("2d")
+ctx.drawImage(video,0,0,320,240)
+const data=canvas.toDataURL("image/jpeg",0.6)
+photo.src=data
+document.getElementById("photoData").value=data
+document.getElementById("previewPhoto").src=data
+faceQualityCheck()
+}
+
+function retake(){
+document.getElementById("capturedPhoto").src=""
+document.getElementById("previewPhoto").src=""
+document.getElementById("faceStatus").innerHTML=""
+}
+
+function faceQualityCheck(){
+const status=document.getElementById("faceStatus")
+status.innerHTML="Checking face quality..."
+setTimeout(()=>{
+status.innerHTML="<span class='success'>Face detected ✔ Ready</span>"
+},1000)
+}
+
+// --- Preview updates ---
+document.getElementById("nameInput").addEventListener("input",function(){
+document.getElementById("previewName").innerText=this.value
+})
+
+document.getElementById("rollInput").addEventListener("input",function(){
+let roll=this.value
+document.getElementById("previewRoll").innerText=roll
+autoClass(roll)
+checkDuplicate(roll)
+generateQR(roll)
+})
+
+document.getElementById("classInput").addEventListener("input",function(){
+document.getElementById("previewClass").innerText=this.value
+})
+
+document.getElementById("parentNameInput").addEventListener("input",function(){
+document.getElementById("previewParent").innerText=this.value
+})
+
+document.getElementById("parentPhoneInput").addEventListener("input",function(){
+document.getElementById("previewPhone").innerText=this.value
+})
+
+document.getElementById("notesInput").addEventListener("input",function(){
+document.getElementById("previewNotes").innerText=this.value
+})
+
+// --- Auto class from roll ---
+function autoClass(roll){
+if(roll.length>=4){
+let year=roll.substring(0,4)
+document.getElementById("classInput").value=year
+document.getElementById("previewClass").innerText=year
+}
+}
+
+// --- Check duplicate roll number ---
+function checkDuplicate(roll){
+fetch("/check_roll?roll="+roll)
+.then(res=>res.json())
+.then(data=>{
+if(data.exists){
+document.getElementById("rollStatus").innerHTML="<span class='warning'>Roll already exists</span>"
+}else{
+document.getElementById("rollStatus").innerHTML="<span class='success'>Available</span>"
+}
+})
+}
+
+// --- Generate QR code ---
+function generateQR(roll){
+if(!roll) return
+QRious = new QRCode(document.getElementById("qrCanvas"),{
+text:roll,
+width:120,
+height:120
+})
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{
+  "name": "BioAttend - Biometric Attendance System",
+  "short_name": "BioAttend",
+  "description": "Smart biometric student attendance tracking with face recognition",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4f46e5",
+  "background_color": "#f8fafc",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/static/icon/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Take Attendance",
+      "short_name": "Attendance",
+      "url": "/attendance",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Reports",
+      "short_name": "Reports",
+      "url": "/reports",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

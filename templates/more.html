@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Toolkit{% endblock %}
+{% block page_title %}Teacher Toolkit{% endblock %}
+
+{% block content %}
+
+<style>
+.tool-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:20px;
+margin-bottom:30px;
+}
+
+.tool-card{
+background:#fff;
+border-radius:12px;
+padding:22px;
+box-shadow:0 6px 16px rgba(0,0,0,0.08);
+transition:0.25s;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+}
+
+.tool-card:hover{
+transform:translateY(-5px);
+box-shadow:0 10px 24px rgba(0,0,0,0.12);
+}
+
+.tool-title{
+font-size:18px;
+font-weight:600;
+margin-bottom:8px;
+}
+
+.tool-desc{
+font-size:14px;
+color:#666;
+margin-bottom:15px;
+}
+
+.tool-btn{
+padding:8px 14px;
+border:none;
+border-radius:8px;
+font-size:14px;
+cursor:pointer;
+background:#2563eb;
+color:white;
+transition:0.2s;
+}
+
+.tool-btn:hover{
+background:#1d4ed8;
+}
+
+.section-title{
+font-size:20px;
+font-weight:600;
+margin:25px 0 15px 0;
+}
+
+.report-form{
+display:none;
+margin-top:20px;
+}
+
+.report-card{
+background:#fff;
+padding:25px;
+border-radius:12px;
+box-shadow:0 6px 16px rgba(0,0,0,0.08);
+}
+
+.form-group{
+margin-bottom:14px;
+}
+
+.form-group label{
+font-size:14px;
+font-weight:500;
+}
+
+.form-control{
+width:100%;
+padding:8px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+.generate-btn{
+background:#16a34a;
+color:white;
+border:none;
+padding:10px 18px;
+border-radius:8px;
+cursor:pointer;
+}
+
+.generate-btn:hover{
+background:#15803d;
+}
+</style>
+
+<div class="section-title">Teacher Tools</div>
+
+<div class="tool-grid">
+
+<div class="tool-card">
+<div>
+<div class="tool-title">📚 Course Upload System</div>
+<div class="tool-desc">Upload study materials and course files for students.</div>
+</div>
+<button class="tool-btn">Open</button>
+</div>
+
+<div class="tool-card">
+<div>
+<div class="tool-title">🧠 Quiz Builder</div>
+<div class="tool-desc">Create quizzes and test student knowledge easily.</div>
+</div>
+<button class="tool-btn">Open</button>
+</div>
+
+<div class="tool-card">
+<div>
+<div class="tool-title">📊 Student Full Profile Generator</div>
+<div class="tool-desc">Generate full student academic reports.</div>
+</div>
+<button class="tool-btn" onclick="showReport()">Create</button>
+</div>
+
+<div class="tool-card">
+<div>
+<div class="tool-title">📩 Parent Report Send</div>
+<div class="tool-desc">Send student performance report to parents.</div>
+</div>
+<button class="tool-btn">Open</button>
+</div>
+
+</div>
+
+<div class="section-title">Report Generator</div>
+
+<div class="report-card report-form" id="reportSection">
+
+<h3 style="margin-bottom:15px;">📑 Professional Student Report Generator</h3>
+
+<form method="POST" action="/generate_report" enctype="multipart/form-data">
+
+<div class="form-group">
+<label>PDF File Name</label>
+<input type="text" name="pdf_name" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Student Name</label>
+<input type="text" name="name" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Roll Number</label>
+<input type="text" name="roll" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Class</label>
+<input type="text" name="class" class="form-control" required>
+</div>
+
+<h3 style="margin-top:20px;">📚 Subject Marks</h3>
+
+<div id="subjects">
+<div class="form-group subject-row">
+<input type="text" name="subject[]" class="form-control" placeholder="Enter Subject (e.g. Maths)">
+
+<input type="number" name="marks[]" class="form-control marks-input" placeholder="Enter Marks (out of 100)" oninput="calculateMarks()">
+</div>
+</div>
+
+<button type="button" onclick="addSubject()" class="btn btn-primary">
+➕ Add Subject
+</button>
+
+<br><br>
+
+<div class="form-group">
+<label>Total Marks</label>
+<input type="text" id="totalMarks" name="total_marks" class="form-control" readonly>
+</div>
+
+<div class="form-group">
+<label>Percentage</label>
+<input type="text" id="percentage" name="percentage" class="form-control" readonly>
+</div>
+
+<div class="form-group">
+<label>Grade</label>
+<input type="text" id="grade" name="grade" class="form-control" readonly>
+</div>
+
+<div class="form-group">
+<label>Attendance Percentage</label>
+<input type="text" name="attendance" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Teacher Notes</label>
+<textarea name="notes" class="form-control"></textarea>
+</div>
+
+<div class="form-group">
+<label>Upload Student Photo</label>
+<input type="file" name="student_photo" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Upload Report Card Photo</label>
+<input type="file" name="report_card" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Upload Teacher Signature</label>
+<input type="file" name="teacher_sign" class="form-control">
+</div>
+
+<div class="form-group">
+<label>Upload School Logo</label>
+<input type="file" name="school_logo" class="form-control">
+</div>
+
+<button type="submit" class="generate-btn">
+Generate Professional PDF Report
+</button>
+
+</form>
+
+</div>
+
+<script>
+
+function addSubject(){
+
+let container = document.getElementById("subjects");
+
+let html = `
+<div class="form-group subject-row">
+<input type="text" name="subject[]" class="form-control" placeholder="Enter Subject (e.g. Science)">
+
+<input type="number" name="marks[]" class="form-control marks-input" placeholder="Enter Marks (out of 100)" oninput="calculateMarks()">
+</div>
+`;
+
+container.insertAdjacentHTML("beforeend", html);
+
+}
+
+function calculateMarks(){
+
+let marks = document.querySelectorAll(".marks-input");
+
+let total = 0;
+let count = 0;
+
+marks.forEach(function(input){
+
+let value = parseFloat(input.value);
+
+if(!isNaN(value)){
+total += value;
+count++;
+}
+
+});
+
+document.getElementById("totalMarks").value = total;
+
+if(count > 0){
+
+let percentage = (total / (count*100)) * 100;
+
+percentage = percentage.toFixed(2);
+
+document.getElementById("percentage").value = percentage + "%";
+
+let grade = "";
+
+if(percentage >= 90) grade = "A+";
+else if(percentage >= 80) grade = "A";
+else if(percentage >= 70) grade = "B";
+else if(percentage >= 60) grade = "C";
+else grade = "D";
+
+document.getElementById("grade").value = grade;
+
+}
+
+}
+
+function showReport(){
+document.getElementById("reportSection").style.display="block";
+window.scrollTo({
+top:document.getElementById("reportSection").offsetTop,
+behavior:"smooth"
+});
+}
+
+</script>
+
+{% endblock %}

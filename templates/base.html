@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BioAttend{% endblock %} - Biometric Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+                        <path d="M16 8C13.8 8 12 9.8 12 12s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 10c-4.4 0-8 1.8-8 4v2h16v-2c0-2.2-3.6-4-8-4z" fill="white"/>
+                    </svg>
+                    <span>BioAttend</span>
+                </div>
+                <button class="sidebar-close" id="sidebarClose">&#10005;</button>
+            </div>
+
+            <nav class="sidebar-nav">
+
+{% if session.get('role') == 'admin' %}
+
+<a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+Dashboard
+</a>
+
+<a href="{{ url_for('students') }}" class="nav-item {% if request.endpoint in ['students','student_profile','register_student','edit_student'] %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+Students
+</a>
+
+<a href="{{ url_for('register_student') }}" class="nav-item {% if request.endpoint == 'register_student' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+Register Student
+</a>
+
+<a href="{{ url_for('mark_attendance') }}" class="nav-item {% if request.endpoint == 'mark_attendance' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+Take Attendance
+</a>
+
+<a href="{{ url_for('teacher_dashboard') }}" class="nav-item {% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+Manual Attendance
+</a>
+
+<!-- MORE BUTTON -->
+<a href="{{ url_for('more') }}" class="nav-item {% if request.endpoint == 'more' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M12 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/></svg>
+More
+</a>
+
+<a href="{{ url_for('export_pdf') }}" class="nav-item {% if request.endpoint == 'export_pdf' %}active{% endif %}"></a>
+
+{% else %}
+
+<a href="{{ url_for('teacher_dashboard') }}" class="nav-item {% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+Dashboard
+</a>
+
+<a href="{{ url_for('mark_attendance') }}" class="nav-item {% if request.endpoint == 'mark_attendance' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+Take Attendance
+</a>
+
+<!-- MORE BUTTON FOR TEACHER -->
+<a href="{{ url_for('more') }}" class="nav-item {% if request.endpoint == 'more' %}active{% endif %}">
+<svg viewBox="0 0 24 24"><path d="M12 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/></svg>
+More
+</a>
+
+{% endif %}
+
+</nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <!-- FIXED: Safe session access -->
+                    <div class="user-avatar">
+                        {{ session.get('name','')[0].upper() if session.get('name') else '' }}
+                    </div>
+                    <div class="user-name">{{ session.get('name','') }}</div>
+                    <div class="user-role">{{ session.get('role','') | capitalize }}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                </button>
+                <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+                <div class="top-bar-right">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode"></button>
+                    <div class="date-display">{{ now if now else '' }}</div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-messages">
+                    {% for cat, msg in messages %}
+                    <div class="alert alert-{{ cat }}">{{ msg }}<button onclick="this.parentElement.remove()">&#10005;</button></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% else %}
+    <div class="public-layout">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}<button onclick="this.parentElement.remove()">&#10005;</button></div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pwa-install.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

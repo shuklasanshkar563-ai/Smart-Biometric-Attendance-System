@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal - BioAttend</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+</head>
+<body>
+<div class="parent-page">
+    <div class="parent-header">
+        <a href="{{ url_for('index') }}" class="parent-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#4f46e5"/>
+            <path d="M16 8C13.2 8 11 10.2 11 13s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm-8 13c0-3.3 5.4-5 8-5s8 1.7 8 5v2H8v-2z" fill="white"/></svg>
+            <span>BioAttend</span>
+        </a>
+        <h1 class="parent-title">Parent Portal</h1>
+        <button class="theme-toggle" id="themeToggle">
+            <svg class="sun-icon" viewBox="0 0 24 24" width="20" height="20"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z"/></svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" width="20" height="20"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+        </button>
+    </div>
+
+    <div class="parent-container">
+        <!-- Search Form -->
+        <div class="parent-search-card">
+            <h2>View Your Child's Attendance</h2>
+            <p>Enter the roll number and your registered phone number to view attendance records.</p>
+
+            <!-- ✅ FLASH MESSAGE -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <!-- ✅ ERROR MESSAGE (NEW ADD) -->
+            {% if error %}
+            <div style="
+                background: #ff4d4d;
+                color: white;
+                padding: 10px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                text-align: center;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('parent_portal') }}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Student Roll Number</label>
+                        <input type="text" name="roll_number" required placeholder="e.g. S001">
+                    </div>
+                    <div class="form-group">
+                        <label>Parent Phone Number</label>
+                        <input type="tel" name="parent_phone" required placeholder="Registered phone number">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">View Attendance</button>
+            </form>
+        </div>
+
+        {% if student and stats %}
+        <!-- Student Info -->
+        <div class="parent-result">
+            <div class="parent-student-card">
+                {% if student.photo_path %}
+                <img src="{{ url_for('static', filename=student.photo_path) }}">
+                {% else %}
+                <div class="parent-avatar">{{ student.name[0] }}</div>
+                {% endif %}
+                <div class="parent-student-info">
+                    <h3>{{ student.name }}</h3>
+                    <p>Class {{ student.class }} &nbsp;|&nbsp; Roll: {{ student.roll_number }}</p>
+                    {% if stats.pct < 75 %}
+                    <div class="warning-banner">⚠️ Low attendance: {{ stats.pct }}% — Below 75% threshold</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-num">{{ stats.total }}</div>
+                    <div class="stat-label">School Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#16a34a">{{ stats.present }}</div>
+                    <div class="stat-label">Present</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#dc2626">{{ stats.absent }}</div>
+                    <div class="stat-label">Absent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:#d97706">{{ stats.late }}</div>
+                    <div class="stat-label">Late</div>
+                </div>
+            </div>
+
+            <!-- Logs Table -->
+            {% if logs %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Attendance History (Last 30 Days)</h3>
+                    <a href="{{ url_for('export_csv') }}?student={{ student.id }}" class="btn btn-outline btn-sm">Export</a>
+                </div>
+                <div class="attendance-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Date</th><th>Time</th><th>Status</th><th>Method</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.date }}</td>
+                                <td>{{ log.time[:5] }}</td>
+                                <td><span class="badge badge-{{ log.status.lower() }}">{{ log.status }}</span></td>
+                                <td style="font-size:0.82rem;color:var(--text-muted)">{{ log.method }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

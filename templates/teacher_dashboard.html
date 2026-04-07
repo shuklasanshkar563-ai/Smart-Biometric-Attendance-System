@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Manual Attendance{% endblock %}
+{% block page_title %}Manual Attendance{% endblock %}
+
+{% block content %}
+
+<div class="glass-card">
+
+    <!-- HEADER -->
+    <div class="top-bar">
+        <h2>📊 Attendance Panel</h2>
+
+        <div class="controls">
+
+            <!-- CLASS FILTER -->
+            <form method="GET" action="{{ url_for('teacher_dashboard') }}">
+                <select name="class" onchange="this.form.submit()">
+                    {% for c in classes %}
+                    <option value="{{ c.class }}" {% if c.class == selected_class %}selected{% endif %}>
+                        Class {{ c.class }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <!-- DATE PICKER -->
+            <form method="GET" action="{{ url_for('teacher_dashboard') }}">
+                <input type="date" name="date" value="{{ selected_date or today }}" onchange="this.form.submit()" class="date-input">
+            </form>
+
+        </div>
+    </div>
+
+{% if students %}
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+    <button onclick="markAll('Present')" class="action green">✔ Present</button>
+    <button onclick="markAll('Absent')" class="action red">✖ Absent</button>
+    <button onclick="markAll('Late')" class="action yellow">⏰ Late</button>
+    <button onclick="saveBulk()" class="action blue">💾 Save</button>
+</div>
+
+<!-- STUDENT GRID -->
+<div class="student-grid">
+
+{% for student in students|sort(attribute='roll_number') %}
+<div class="student-card" data-student-id="{{ student.id }}">
+
+    <div class="student-top">
+        <div class="avatar">{{ student.name[0] }}</div>
+        <div>
+            <h4>{{ student.name }}</h4>
+            <p>Roll: {{ student.roll_number }}</p>
+        </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-row">
+        {% set att = attendance_map.get(student.id) %}
+        {% if att %}
+        <span class="status {{ att.status.lower() }}">{{ att.status }} ({{ att.date }})</span>
+        {% else %}
+        <span class="status neutral">Not Marked</span>
+        {% endif %}
+    </div>
+
+    <!-- RADIO -->
+    <div class="radio-group">
+        <label><input type="radio" name="status_{{ student.id }}" value="Present"> P</label>
+        <label><input type="radio" name="status_{{ student.id }}" value="Absent"> A</label>
+        <label><input type="radio" name="status_{{ student.id }}" value="Late"> L</label>
+    </div>
+
+    <!-- SAVE -->
+    <form method="POST" action="{{ url_for('mark_attendance') }}">
+    <input type="hidden" name="student_id" value="{{ student.id }}">
+    <input type="hidden" name="class" value="{{ selected_class }}">
+    
+    <!-- ✅ IMPORTANT DATE FIELD -->
+    <input type="hidden" name="date" value="{{ selected_date or today }}">
+
+    <input type="hidden" name="status" id="status_hidden_{{ student.id }}">
+
+    <button type="submit" class="save-btn" data-id="{{ student.id }}" onclick="syncStatus(this)">
+        Save
+    </button>
+</form>
+
+</div>
+{% endfor %}
+
+</div>
+
+{% else %}
+<p>No students</p>
+{% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<style>
+
+/* BACKGROUND */
+body{
+background: linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+}
+
+/* CARD */
+.glass-card{
+backdrop-filter: blur(14px);
+background: rgba(255,255,255,0.05);
+padding:20px;
+border-radius:16px;
+}
+
+/* TOP BAR */
+.top-bar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.controls{
+display:flex;
+gap:10px;
+align-items:center;
+}
+
+/* DATE */
+.date-input{
+background:#1e293b;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:8px;
+}
+
+/* ACTION */
+.action-bar{
+display:flex;
+gap:10px;
+margin-bottom:15px;
+overflow:auto;
+}
+
+.action{
+padding:10px 16px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+.green{background:#22c55e;}
+.red{background:#ef4444;}
+.yellow{background:#facc15;}
+.blue{background:#3b82f6;}
+
+.action:hover{
+transform:translateY(-2px);
+}
+
+/* GRID */
+.student-grid{
+display:grid;
+grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+gap:15px;
+}
+
+/* CARD */
+.student-card{
+background: rgba(255,255,255,0.08);
+padding:15px;
+border-radius:14px;
+transition:0.3s;
+}
+
+.student-card:hover{
+transform:translateY(-5px);
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* TOP */
+.student-top{
+display:flex;
+gap:10px;
+align-items:center;
+}
+
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+background:#3b82f6;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+}
+
+/* STATUS */
+.status{
+padding:4px 10px;
+border-radius:8px;
+font-size:12px;
+}
+
+.present{background:#22c55e;}
+.absent{background:#ef4444;}
+.late{background:#facc15;color:black;}
+.neutral{background:gray;}
+
+/* RADIO */
+.radio-group{
+display:flex;
+justify-content:space-around;
+margin:10px 0;
+}
+
+/* BUTTON */
+.save-btn{
+width:100%;
+padding:8px;
+border:none;
+border-radius:8px;
+background:#3b82f6;
+color:white;
+cursor:pointer;
+transition:0.3s;
+}
+
+.save-btn:hover{
+background:#2563eb;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+.student-grid{
+grid-template-columns:1fr;
+}
+}
+
+</style>
+
+<script>
+
+function syncStatus(btn){
+const id = btn.dataset.id
+const selected = document.querySelector(`input[name="status_${id}"]:checked`)
+if(selected){
+document.getElementById(`status_hidden_${id}`).value = selected.value
+}
+}
+
+function markAll(status){
+document.querySelectorAll('.student-card').forEach(card=>{
+const id = card.dataset.studentId
+const radio = card.querySelector(`input[value="${status}"]`)
+if(radio) radio.checked = true
+})
+}
+
+function saveBulk(){
+
+const records = []
+const selectedDate = document.querySelector('.date-input').value
+
+document.querySelectorAll('.student-card').forEach(card=>{
+const id = card.dataset.studentId
+const checked = card.querySelector('input[type="radio"]:checked')
+
+if(checked){
+records.push({student_id:id,status:checked.value})
+}
+})
+
+fetch('/bulk-attendance',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+date: selectedDate,
+records: records
+})
+})
+.then(r=>r.json())
+.then(d=>{
+if(d.success){
+location.reload()
+}
+})
+
+}
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ================= SUMMARY CARDS ================= -->
+
+<div class="summary-grid">
+
+<div class="summary-card">
+<div class="summary-title">Total Students</div>
+<div class="summary-number">{{ total_students }}</div>
+</div>
+
+<div class="summary-card green">
+<div class="summary-title">Present Today</div>
+<div class="summary-number">{{ present_today }}</div>
+</div>
+
+<div class="summary-card red">
+<div class="summary-title">Absent Today</div>
+<div class="summary-number">{{ absent_today }}</div>
+</div>
+
+<div class="summary-card blue">
+<div class="summary-title">Attendance %</div>
+<div class="summary-number">{{ attendance_percentage }}%</div>
+</div>
+
+</div>
+
+
+<!-- ================= QUICK ACTIONS ================= -->
+
+<div class="card">
+<div class="card-header">
+<h2 class="card-title">⚡ Quick Actions</h2>
+</div>
+
+<div class="quick-actions">
+
+<a href="{{ url_for('register_student') }}" class="action-btn">
+➕ Register Student
+</a>
+
+<a href="{{ url_for('mark_attendance') }}" class="action-btn">
+📷 Take Attendance
+</a>
+
+<a href="{{ url_for('students') }}" class="action-btn">
+👨‍🎓 View Students
+</a>
+
+<a href="{{ url_for('export_pdf') }}" class="action-btn">
+⬇ Export PDF Report
+</a>
+
+</div>
+
+</div>
+
+
+<div class="dashboard-grid">
+
+<div class="two-col">
+
+<!-- ================= LOW ATTENDANCE ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">⚠️ Low Attendance Alerts</h2>
+<span class="badge-count">{{ low_attendance|length }}</span>
+</div>
+
+{% if low_attendance %}
+
+<div class="warning-list">
+
+{% for item in low_attendance %}
+
+<div class="warning-item">
+
+<div class="warning-info">
+
+<a href="{{ url_for('student_profile', student_id=item.student.id) }}" class="warning-name">
+{{ item.student.name }}
+</a>
+
+<div class="warning-meta">
+{{ item.student.roll_number }} • {{ item.student.class }}
+</div>
+
+</div>
+
+<div class="warning-pct {% if item.percentage < 50 %}pct-red{% else %}pct-yellow{% endif %}">
+{{ item.percentage }}%
+</div>
+
+{% set bar_class = "bar-red" if item.percentage < 50 else "bar-yellow" %}
+
+<div class="progress-bar-wrap">
+<div class="progress-bar {{ bar_class }}" data-width="{{ item.percentage }}"></div>
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="empty-state small">
+<p>All students have good attendance!</p>
+</div>
+
+{% endif %}
+
+</div>
+
+
+<!-- ================= TOP STUDENTS ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">🏆 Top Attendance</h2>
+</div>
+
+<div class="top-students">
+
+{% for s in top_students %}
+
+<div class="top-item">
+
+<div class="top-name">
+{{ s.name }}
+</div>
+
+<div class="top-percent">
+{{ s.percentage }}%
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+
+<!-- ================= FREQUENT ABSENTEES ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">🚫 Frequent Absentees</h2>
+</div>
+
+<div class="absent-list">
+
+{% for s in frequent_absentees %}
+
+<div class="absent-item">
+
+<div class="absent-name">
+{{ s.name }}
+</div>
+
+<div class="absent-count">
+{{ s.absent_days }} absences
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+
+<!-- ================= NEW STUDENTS ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">🆕 New Students</h2>
+</div>
+
+<div class="new-students">
+
+{% for s in recent_students %}
+
+<div class="new-item">
+{{ s.name }} • {{ s.class }}
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+
+<!-- ================= BIRTHDAY ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">🎂 Birthdays Today</h2>
+</div>
+
+{% if birthdays %}
+
+{% for s in birthdays %}
+
+<div class="birthday-item">
+🎉 {{ s.name }} ({{ s.class }})
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<div class="empty-state small">
+No birthdays today
+</div>
+
+{% endif %}
+
+</div>
+
+
+<!-- ================= NEWS ================= -->
+
+<div class="card">
+
+<div class="card-header">
+<h2 class="card-title">📰 Live News</h2>
+</div>
+
+<div id="newsBox" class="news-list">
+
+<div class="news-placeholder">
+News API connect hone ke baad yaha news show hogi
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+document.querySelectorAll(".progress-bar").forEach(bar => {
+bar.style.width = bar.dataset.width + "%";
+});
+
+});
+document.addEventListener("DOMContentLoaded", () => {
+
+document.querySelectorAll(".progress-bar").forEach(bar=>{
+setTimeout(()=>{
+bar.style.width = bar.dataset.width + "%";
+},200)
+})
+
+})
+
+</script>
+
+<style>
+
+/* ================= GLOBAL ================= */
+
+.dashboard-grid{
+display:grid;
+grid-template-columns:1fr;
+gap:20px;
+}
+
+.two-col{
+display:grid;
+grid-template-columns:1fr;
+gap:20px;
+}
+
+.card{
+background:white;
+border-radius:14px;
+padding:18px;
+box-shadow:0 6px 18px rgba(0,0,0,0.05);
+transition:all 0.3s ease;
+}
+
+.card:hover{
+transform:translateY(-3px);
+box-shadow:0 12px 28px rgba(0,0,0,0.08);
+}
+
+.card-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+}
+
+.card-title{
+font-size:18px;
+font-weight:600;
+}
+
+
+/* ================= SUMMARY ================= */
+
+.summary-grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+margin-bottom:20px;
+}
+
+.summary-card{
+background:white;
+padding:18px;
+border-radius:12px;
+box-shadow:0 6px 16px rgba(0,0,0,0.05);
+transition:all 0.3s ease;
+}
+
+.summary-card:hover{
+transform:translateY(-4px);
+}
+
+.summary-title{
+font-size:14px;
+color:#666;
+}
+
+.summary-number{
+font-size:28px;
+font-weight:700;
+margin-top:5px;
+}
+
+.green{border-left:5px solid #22c55e;}
+.red{border-left:5px solid #ef4444;}
+.blue{border-left:5px solid #3b82f6;}
+
+
+/* ================= ACTION BUTTONS ================= */
+
+.quick-actions{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.action-btn{
+background:#2563eb;
+color:white;
+padding:10px 16px;
+border-radius:8px;
+text-decoration:none;
+font-size:14px;
+transition:all 0.25s ease;
+position:relative;
+overflow:hidden;
+}
+
+.action-btn:hover{
+background:#1d4ed8;
+transform:translateY(-2px);
+}
+
+
+/* ================= LIST ITEMS ================= */
+
+.top-item,
+.absent-item{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #eee;
+transition:all 0.25s ease;
+}
+
+.top-item:hover,
+.absent-item:hover{
+background:#f9fafb;
+border-radius:6px;
+}
+
+.new-item{
+padding:8px;
+border-bottom:1px solid #eee;
+}
+
+.birthday-item{
+padding:10px;
+}
+
+
+/* ================= NEWS ================= */
+
+.news-list{
+max-height:280px;
+overflow-y:auto;
+}
+
+.news-item{
+padding:10px;
+border-bottom:1px solid #eee;
+transition:all 0.25s ease;
+}
+
+.news-item:hover{
+background:#f9fafb;
+}
+
+.news-title{
+color:#2563eb;
+font-weight:600;
+text-decoration:none;
+}
+
+.news-title:hover{
+text-decoration:underline;
+}
+
+
+/* ================= ATTENDANCE PROGRESS ================= */
+
+.progress-bar-wrap{
+background:#eee;
+height:6px;
+border-radius:6px;
+margin-top:6px;
+overflow:hidden;
+}
+
+.progress-bar{
+height:6px;
+border-radius:6px;
+width:0;
+transition:width 1s ease;
+}
+
+.bar-red{background:#ef4444;}
+.bar-yellow{background:#f59e0b;}
+
+
+/* ================= MOBILE RESPONSIVE ================= */
+
+@media (max-width:1100px){
+
+.summary-grid{
+grid-template-columns:repeat(2,1fr);
+}
+
+.two-col{
+grid-template-columns:1fr;
+}
+
+}
+
+@media (max-width:600px){
+
+.summary-grid{
+grid-template-columns:1fr;
+}
+
+.summary-card{
+text-align:center;
+}
+
+.quick-actions{
+flex-direction:column;
+}
+
+.action-btn{
+text-align:center;
+}
+
+.card{
+padding:16px;
+}
+
+.card-title{
+font-size:16px;
+}
+
+}
+
+</style>
+
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Take Attendance{% endblock %}
+{% block page_title %}Take Attendance{% endblock %}
+
+{% block content %}
+<div class="two-col">
+    <!-- Face Recognition -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Face Recognition</h2>
+            {% if face_recognition_available %}
+            <span class="badge badge-present">Available</span>
+            {% else %}
+            <span class="badge badge-neutral">Library Not Installed</span>
+            {% endif %}
+        </div>
+
+        {% if face_recognition_available %}
+        <div class="webcam-area">
+            <div class="webcam-wrap" id="webcamWrap">
+                <video id="webcamVideo" autoplay playsinline></video>
+                <canvas id="webcamCanvas" style="display:none"></canvas>
+                <div class="webcam-overlay">
+                    <div class="face-guide-box scanning"></div>
+                </div>
+            </div>
+            <div class="webcam-controls">
+                <button class="btn btn-primary" id="startBtn" onclick="startScan()">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" fill="white"/></svg>
+                    Start Scanning
+                </button>
+                <button class="btn btn-danger" id="stopBtn" onclick="stopScan()" style="display:none">Stop</button>
+            </div>
+        </div>
+
+        <div id="recognitionResult" class="recognition-result" style="display:none"></div>
+
+        <div class="matched-list" id="matchedList">
+            <h3>Recognized Students</h3>
+            <div id="matchedEntries"></div>
+        </div>
+
+        {% else %}
+        <div class="feature-notice">
+            <svg viewBox="0 0 24 24" width="48" height="48"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#4f46e5"/></svg>
+            <h3>Face Recognition</h3>
+            <p>Install the <code>face-recognition</code> library to enable automatic biometric attendance.</p>
+            <code class="code-block">pip install face-recognition dlib cmake</code>
+            <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">
+                Note: <code>face-recognition</code> requires cmake and dlib to compile. This may take several minutes to install.
+            </p>
+            <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted)">
+                Use manual attendance in the meantime →
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Manual Attendance Quick Mark -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Quick Manual Mark</h2>
+        </div>
+        <div class="search-wrap">
+            <input type="text" id="studentSearch" placeholder="Search student by name or roll..." class="form-input" oninput="searchStudents(this.value)">
+        </div>
+        <div id="searchResults" class="search-results"></div>
+
+        <div class="quick-mark-panel" id="quickMarkPanel" style="display:none">
+            <div class="selected-student" id="selectedStudent"></div>
+            <div class="status-buttons">
+                <button class="btn btn-success btn-lg" onclick="quickMark('Present')">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="white"/></svg>
+                    Present
+                </button>
+                <button class="btn btn-danger btn-lg" onclick="quickMark('Absent')">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="white"/></svg>
+                    Absent
+                </button>
+                <button class="btn btn-warning btn-lg" onclick="quickMark('Late')">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="white"/></svg>
+                    Late
+                </button>
+            </div>
+        </div>
+
+        <!-- Today's log -->
+        <div class="card-header" style="margin-top:1rem;border-top:1px solid var(--border)">
+            <h3 class="card-title">Today's Quick Log</h3>
+        </div>
+        <div id="quickLog" style="max-height:250px;overflow-y:auto"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scanInterval = null;
+let selectedStudentId = null;
+
+// Face recognition scanning
+async function startScan() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        document.getElementById('webcamVideo').srcObject = stream;
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'flex';
+        scanInterval = setInterval(captureAndRecognize, 3000);
+    } catch(e) {
+        showToast('Camera access denied.', 'danger');
+    }
+}
+
+function stopScan() {
+    clearInterval(scanInterval);
+    const video = document.getElementById('webcamVideo');
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    document.getElementById('startBtn').style.display = 'flex';
+    document.getElementById('stopBtn').style.display = 'none';
+}
+
+function captureAndRecognize() {
+    const video = document.getElementById('webcamVideo');
+    const canvas = document.getElementById('webcamCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+    fetch('/face-recognition-attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData })
+    }).then(r => r.json()).then(d => {
+        const result = document.getElementById('recognitionResult');
+        result.style.display = 'block';
+        if (d.success) {
+            d.matched.forEach(m => {
+                result.innerHTML = `<div class="recognition-success">✓ ${m.name} — ${m.status}</div>`;
+                addMatchedEntry(m.name, m.status);
+                showToast(`${m.name} marked ${m.status}`, 'success');
+            });
+        }
+    });
+}
+
+function addMatchedEntry(name, status) {
+    const list = document.getElementById('matchedEntries');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+        <div class="log-avatar">${name[0]}</div>
+        <div class="log-info"><div class="log-name">${name}</div></div>
+        <span class="badge badge-${status.toLowerCase()}">${status}</span>
+    `;
+    list.prepend(entry);
+    document.getElementById('matchedList').style.display = 'block';
+}
+
+// Student search for quick manual mark
+let searchTimeout;
+function searchStudents(q) {
+    clearTimeout(searchTimeout);
+    if (!q.trim()) { document.getElementById('searchResults').innerHTML = ''; return; }
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/student-search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                const results = document.getElementById('searchResults');
+                if (!data.length) { results.innerHTML = '<p class="search-empty">No students found</p>'; return; }
+                results.innerHTML = data.map(s => `
+                    <div class="search-item" onclick="selectStudent(${s.id}, '${s.name}', '${s.roll_number}', '${s.class}')">
+                        <div class="student-avatar-sm">${s.name[0]}</div>
+                        <div>
+                            <div>${s.name}</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted)">${s.roll_number} • ${s.class}</div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+    }, 300);
+}
+
+function selectStudent(id, name, roll, cls) {
+    selectedStudentId = id;
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('studentSearch').value = '';
+    document.getElementById('selectedStudent').innerHTML = `
+        <div class="selected-info">
+            <div class="student-avatar-sm">${name[0]}</div>
+            <div>
+                <div class="selected-name">${name}</div>
+                <div class="selected-meta">${roll} • ${cls}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('quickMarkPanel').style.display = 'block';
+}
+
+function quickMark(status) {
+    if (!selectedStudentId) return;
+    fetch('/mark-attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `student_id=${selectedStudentId}&status=${status}&method=Manual`
+    }).then(() => {
+        const studentName = document.querySelector('.selected-name')?.textContent || '';
+        showToast(`${studentName} marked ${status}`, 'success');
+        const log = document.getElementById('quickLog');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `
+            <div class="log-avatar">${studentName[0] || '?'}</div>
+            <div class="log-info"><div class="log-name">${studentName}</div></div>
+            <span class="badge badge-${status.toLowerCase()}">${status}</span>
+        `;
+        log.prepend(entry);
+        document.getElementById('quickMarkPanel').style.display = 'none';
+        selectedStudentId = null;
+    });
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,6 @@
+flask
+numpy
+pandas
+reportlab
+Pillow
+opencv-python-headless

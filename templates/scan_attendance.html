@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Scan Attendance{% endblock %}
+{% block page_title %}Scan Student Attendance{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📸 Face Scan Attendance</h2>
+    </div>
+
+    <div class="scan-container" style="text-align:center;">
+        <video id="video" width="400" height="300" autoplay></video>
+        <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+        <div style="margin-top:10px;">
+            <button id="capture-btn" class="action-btn">Scan & Mark Attendance</button>
+        </div>
+        <div id="status" style="margin-top:10px; font-weight:600;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Access the webcam
+const video = document.getElementById('video');
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    video.srcObject = stream;
+})
+.catch(err => {
+    console.error("Error accessing camera: ", err);
+    alert("Camera access denied!");
+});
+
+// Capture frame and send to server
+document.getElementById('capture-btn').addEventListener('click', () => {
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataURL = canvas.toDataURL('image/jpeg');
+
+    document.getElementById('status').innerText = "⏳ Scanning...";
+
+    fetch('{{ url_for("scan_attendance_web") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataURL })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            document.getElementById('status').innerText = `✅ ${data.message}`;
+        } else {
+            document.getElementById('status').innerText = `⚠️ ${data.message}`;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById('status').innerText = "❌ Error scanning face!";
+    });
+});
+</script>
+{% endblock %}

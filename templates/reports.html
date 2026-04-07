@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Attendance Reports{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Attendance Reports</h2>
+        <div class="header-actions">
+            <a href="{{ url_for('export_csv', filter=filter_type, **({'class': filter_class} if filter_class else {})) }}"
+               class="btn btn-outline btn-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Export CSV
+            </a>
+            <a href="{{ url_for('export_pdf', filter=filter_type, **({'class': filter_class} if filter_class else {})) }}"
+               class="btn btn-danger btn-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5z" fill="white"/></svg>
+                Export PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ url_for('reports') }}" class="filter-bar">
+        <div class="filter-tabs">
+            <button type="submit" name="filter" value="daily"
+                class="filter-tab {% if filter_type == 'daily' %}active{% endif %}">Today</button>
+            <button type="submit" name="filter" value="weekly"
+                class="filter-tab {% if filter_type == 'weekly' %}active{% endif %}">This Week</button>
+            <button type="submit" name="filter" value="monthly"
+                class="filter-tab {% if filter_type == 'monthly' %}active{% endif %}">This Month</button>
+        </div>
+        <select name="class" class="form-select" onchange="this.form.submit()">
+            <option value="">All Classes</option>
+            {% for c in classes %}
+            <option value="{{ c.class }}" {% if c.class == filter_class %}selected{% endif %}>Class {{ c.class }}</option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="filter" value="{{ filter_type }}">
+    </form>
+
+    <!-- Summary -->
+    <div class="report-summary">
+        <div class="summary-item">
+            <span class="summary-num">{{ records|length }}</span>
+            <span class="summary-label">Total Records</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-num" style="color:#16a34a">
+                {{ records|selectattr('status','equalto','Present')|list|length }}
+            </span>
+            <span class="summary-label">Present</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-num" style="color:#dc2626">
+                {{ records|selectattr('status','equalto','Absent')|list|length }}
+            </span>
+            <span class="summary-label">Absent</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-num" style="color:#d97706">
+                {{ records|selectattr('status','equalto','Late')|list|length }}
+            </span>
+            <span class="summary-label">Late</span>
+        </div>
+    </div>
+
+    {% if records %}
+    <div class="attendance-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Roll No</th>
+                    <th>Class</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <a href="{{ url_for('student_profile', student_id=r.student_id) }}">{{ r.name }}</a>
+                    </td>
+                    <td>{{ r.roll_number }}</td>
+                    <td><span class="badge badge-info">{{ r.class }}</span></td>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.time[:5] }}</td>
+                    <td><span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span></td>
+                    <td style="font-size:0.82rem;color:var(--text-muted)">{{ r.method }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" width="60" height="60"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="#9ca3af"/></svg>
+        <p>No attendance records for this period</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
