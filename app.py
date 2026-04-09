@@ -50,13 +50,21 @@ import sqlite3
 
 def init_db():
     conn = sqlite3.connect("database.db")
+    
     conn.execute('''
         CREATE TABLE IF NOT EXISTS admins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
+            username TEXT UNIQUE,
             password TEXT
         )
     ''')
+
+    # default admin
+    try:
+        conn.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "1234"))
+    except:
+        pass
+
     conn.commit()
     conn.close()
 
