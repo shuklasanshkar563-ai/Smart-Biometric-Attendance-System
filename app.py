@@ -45,6 +45,23 @@ activity_log = []
 
 
 app = Flask(__name__)
+
+import sqlite3
+
+def init_db():
+    conn = sqlite3.connect("database.db")
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            password TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
 app.secret_key = os.environ.get('SESSION_SECRET', 'attendance-secret')
 
 DATABASE = 'database.db'
