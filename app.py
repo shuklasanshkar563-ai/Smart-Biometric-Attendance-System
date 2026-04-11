@@ -61,7 +61,7 @@ def init_db():
 
     # default admin
     try:
-        conn.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "1234"))
+        conn.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "admin123"))
     except:
         pass
 
