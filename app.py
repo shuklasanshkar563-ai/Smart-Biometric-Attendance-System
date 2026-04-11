@@ -1,3 +1,4 @@
+from calendar import c
 import os
 import json
 import sqlite3
@@ -46,29 +47,19 @@ activity_log = []
 
 app = Flask(__name__)
 
-import sqlite3
+# 👇 baaki code...
 
 def init_db():
-    conn = sqlite3.connect("database.db")
-    
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS admins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT
-        )
-    ''')
+    with get_db() as conn:
+        c = conn.cursor()
+        # tables create
 
-    # default admin
-    try:
-        conn.execute("INSERT INTO admins (username, password) VALUES (?, ?)", ("admin", "admin123"))
-    except:
-        pass
-
-    conn.commit()
-    conn.close()
-
+# 👇 YAHAN CALL KARO
 init_db()
+import sqlite3
+
+
+
 
 app.secret_key = os.environ.get('SESSION_SECRET', 'attendance-secret')
 
@@ -336,6 +327,7 @@ def init_db():
     with get_db() as conn:
         c = conn.cursor()
 
+        # ================= STUDENTS =================
         c.execute('''
             CREATE TABLE IF NOT EXISTS students (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -350,6 +342,7 @@ def init_db():
             )
         ''')
 
+        # ================= ATTENDANCE =================
         c.execute('''
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -361,6 +354,7 @@ def init_db():
             )
         ''')
 
+        # ================= TEACHERS =================
         c.execute('''
             CREATE TABLE IF NOT EXISTS teachers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -372,6 +366,7 @@ def init_db():
             )
         ''')
 
+        # ================= ADMINS =================
         c.execute('''
             CREATE TABLE IF NOT EXISTS admins (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -380,6 +375,21 @@ def init_db():
             )
         ''')
 
+        # ================= ACTIVITY LOGS (🔥 FIX) =================
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                roll_number TEXT,
+                class TEXT,
+                action TEXT,
+                status TEXT,
+                time TEXT,
+                date TEXT DEFAULT CURRENT_DATE
+            )
+        ''')
+
+        # ================= DEFAULT ADMIN =================
         c.execute("INSERT OR IGNORE INTO admins VALUES (1,'admin','admin123')")
 
 
@@ -464,7 +474,7 @@ def login():
             session["user_id"] = user["id"]
             session["role"] = role
             # Fix: store user name for Jinja template
-            session["name"] = user.get("name") if role == "teacher" else username
+            session["name"] = user["name"] if role == "teacher" else username
             return redirect("/dashboard")
 
     return render_template("login.html")
